@@ -74,3 +74,58 @@ func TestSettingNewWeights(t *testing.T) {
 		}
 	}
 }
+
+func TestNetOutputs(t *testing.T) {
+	nn := NewNeuralNetWithDefaults()
+	nn.SetupNeuralNet()
+	newWeights := make([]float64, 0)
+	for _, _ = range nn.GetWeights() {
+		newWeights = append(newWeights, 0.0)
+	}
+	nn.setWeights(newWeights)
+	outputs := nn.Outputs()
+	if len(outputs) != nn.NeuronsPerHiddenLayer {
+		t.Error("Total outputs should equal the neurons per hidden layer")
+	}
+	nn.Predict([]float64{0.0, 0.0})
+	outputs = nn.Outputs()
+	for _, out := range outputs {
+		if out != 0.5 {
+			t.Error("Incorrect output based on weights of net")
+		}
+	}
+}
+
+func TestClearingDeltas(t *testing.T) {
+	nn := NewNeuralNetWithDefaults()
+	nn.SetupNeuralNet()
+	for _, layer := range nn.Layers {
+		for _, neuron := range layer.Neurons {
+			neuron.delta = 100.00
+		}
+	}
+	nn.ClearDeltas()
+	for _, layer := range nn.Layers {
+		for _, neuron := range layer.Neurons {
+			if neuron.delta != 0.0 {
+				t.Error("Failed to clear neuron delta")
+			}
+		}
+	}
+}
+
+func TestPredictZeroWeights(t *testing.T) {
+	nn := NewNeuralNetWithDefaults()
+	nn.SetupNeuralNet()
+	newWeights := make([]float64, 0)
+	for _, _ = range nn.GetWeights() {
+		newWeights = append(newWeights, 0.0)
+	}
+	nn.setWeights(newWeights)
+	nn.Predict([]float64{0.0, 0.0})
+	for _, out := range nn.Outputs() {
+		if out != 0.5 {
+			t.Error("Incorrect predict output based on weights of net")
+		}
+	}
+}
