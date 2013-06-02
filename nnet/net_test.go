@@ -22,3 +22,20 @@ func TestNewNeuralNetWithDefaults(t *testing.T) {
 		t.Error("Layers should be defaulted to a zero length")
 	}
 }
+
+func TestSetupWithNoHiddenLayers(t *testing.T) {
+	nn := NewNeuralNetWithDefaults()
+	nn.NumHiddenLayers = 0
+	nn.SetupNeuralNet()
+	if len(nn.Layers) != 2 {
+		t.Error("Net should only have an input and output layer if no hidden layers")
+	}
+}
+
+func TestSetupWithHiddenLayers(t *testing.T) {
+	nn := NewNeuralNetWithDefaults()
+	nn.SetupNeuralNet()
+	if len(nn.Layers) != 2+nn.NumHiddenLayers {
+		t.Errorf("Net should have %d hidden layers\n", nn.NumHiddenLayers)
+	}
+}
