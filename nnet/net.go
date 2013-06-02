@@ -20,6 +20,16 @@ type NeuralNet struct {
 	guess                 []float64
 }
 
+func NewNeuralNetWithDefaults() *NeuralNet {
+	return &NeuralNet{
+		NumInputs:             TotalInputs,
+		NumOutputs:            TotalOutputs,
+		NumHiddenLayers:       TotalHiddenLayers,
+		NeuronsPerHiddenLayer: TotalNeuronsPerHiddenLayer,
+		Layers:                make([]*NeuronLayer, 0),
+	}
+}
+
 func (nn *NeuralNet) SetupNeuralNet() {
 	// Create input layer
 	nl := &NeuronLayer{}

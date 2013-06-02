@@ -12,13 +12,7 @@ func init() {
 }
 
 func main() {
-	nn := &nnet.NeuralNet{
-		NumInputs:             nnet.TotalInputs,
-		NumOutputs:            nnet.TotalOutputs,
-		NumHiddenLayers:       nnet.TotalHiddenLayers,
-		NeuronsPerHiddenLayer: nnet.TotalNeuronsPerHiddenLayer,
-		Layers:                make([]*nnet.NeuronLayer, 0),
-	}
+	nn := nnet.NewNeuralNetWithDefaults()
 	nn.SetupNeuralNet()
 	log.Printf("Neural Net Layers: %d\n", len(nn.Layers))
 	// log.Printf("Neural Net:\n\n%+v", nn)
