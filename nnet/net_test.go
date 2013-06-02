@@ -39,3 +39,38 @@ func TestSetupWithHiddenLayers(t *testing.T) {
 		t.Errorf("Net should have %d hidden layers\n", nn.NumHiddenLayers)
 	}
 }
+
+func TestGettingWeights(t *testing.T) {
+	nn := NewNeuralNetWithDefaults()
+	nn.SetupNeuralNet()
+	weights := nn.GetWeights()
+	expectedTotal := (nn.NumInputs * nn.NeuronsPerHiddenLayer * nn.NumHiddenLayers) + (nn.NeuronsPerHiddenLayer * nn.NumOutputs)
+	if len(weights) != expectedTotal {
+		t.Errorf("Total weights should be %d but got %d\n", len(weights), expectedTotal)
+	}
+}
+
+func TestTotalWeights(t *testing.T) {
+	nn := NewNeuralNetWithDefaults()
+	nn.SetupNeuralNet()
+	total := nn.TotalWeights()
+	expectedTotal := (nn.NumInputs * nn.NeuronsPerHiddenLayer * nn.NumHiddenLayers) + (nn.NeuronsPerHiddenLayer * nn.NumOutputs)
+	if total != expectedTotal {
+		t.Errorf("Total weights should be %d but got %d\n", total, expectedTotal)
+	}
+}
+
+func TestSettingNewWeights(t *testing.T) {
+	nn := NewNeuralNetWithDefaults()
+	nn.SetupNeuralNet()
+	newWeights := make([]float64, 0)
+	for _, _ = range nn.GetWeights() {
+		newWeights = append(newWeights, 0.0)
+	}
+	nn.setWeights(newWeights)
+	for _, weight := range nn.GetWeights() {
+		if weight != 0.0 {
+			t.Error("New weight was unable to be set")
+		}
+	}
+}
