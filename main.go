@@ -17,8 +17,11 @@ const (
 )
 
 type Neuron struct {
-	NumInputs int
-	Weights   []float64
+	TotalInputs int
+	Inputs      []float64
+	Weights     []float64
+	Output      float64
+	delta       float64
 }
 
 type NeuronLayer struct {
@@ -73,19 +76,29 @@ var TrainingSet = [][]string{
 	{"36 - 55", "high school", "high", "married", "false"},
 }
 
-func (sn *Neuron) SetupNeuron(numInputs int) {
-	sn.NumInputs = numInputs
-	for i := 0; i < numInputs+1; i++ {
-		sn.Weights = append(sn.Weights, rand.Float64())
+func (n *Neuron) SetupNeuron(inputs int) {
+	n.TotalInputs = inputs
+	// Add 1 weight to carry bias
+	for i := 0; i < inputs+1; i++ {
+		n.Weights = append(n.Weights, rand.Float64()-0.5)
+	}
+}
+
+func (nl *NeuronLayer) SetupInputLayer(numNeurons, numInputs int) {
+	nl.NumNeurons = numNeurons
+	for i := 0; i < numInputs; i++ {
+		n := &Neuron{}
+		n.TotalInputs = numInputs
+		nl.Neurons = append(nl.Neurons, n)
 	}
 }
 
 func (nl *NeuronLayer) SetupNeuronLayer(numNeurons, numInputs int) {
 	nl.NumNeurons = numNeurons
 	for i := 0; i < numInputs; i++ {
-		sn := &Neuron{}
-		sn.SetupNeuron(numInputs)
-		nl.Neurons = append(nl.Neurons, sn)
+		n := &Neuron{}
+		n.SetupNeuron(numInputs)
+		nl.Neurons = append(nl.Neurons, n)
 	}
 }
 
@@ -93,6 +106,11 @@ func (nl *NeuronLayer) SetupNeuronLayer(numNeurons, numInputs int) {
 //  Neural Net
 //
 func (nn *NeuralNet) SetupNeuralNet() {
+	// Create input layer
+	nl := &NeuronLayer{}
+	nl.SetupInputLayer(nn.NumOutputs, nn.NumInputs)
+	nn.Layers = append(nn.Layers, nl)
+
 	if nn.NumHiddenLayers <= 0 {
 		// Create output layer
 		nl := &NeuronLayer{}
@@ -104,7 +122,7 @@ func (nn *NeuralNet) SetupNeuralNet() {
 	for i := 0; i < nn.NumHiddenLayers; i++ {
 		nl := &NeuronLayer{}
 		nl.SetupNeuronLayer(nn.NeuronsPerHiddenLayer, nn.NeuronsPerHiddenLayer)
-		nn.Layers = append([]*NeuronLayer{nl}, nn.Layers...)
+		nn.Layers = append(nn.Layers, nl)
 	}
 
 	// Create output layer
@@ -114,94 +132,98 @@ func (nn *NeuralNet) SetupNeuralNet() {
 }
 
 func (nn *NeuralNet) GetWeights() (weights []float64) {
-	// Each layer
-	for i := 0; i < nn.NumHiddenLayers; i++ {
+	// Start at 1 because input layer has no weights
+	for i := 1; i < nn.NumHiddenLayers; i++ {
 		layer := nn.Layers[i]
-		// Each neuron
-		for j := 0; j < layer.NumNeurons; j++ {
-			neuron := layer.Neurons[j]
-			for k := 0; k < neuron.NumInputs; k++ {
-				weight := neuron.Weights[k]
-				weights = append([]float64{weight}, weights...)
-			}
+		for _, neuron := range layer.Neurons {
+			weights = append(weights, neuron.Weights...)
 		}
 	}
 	return
 }
 
 func (nn *NeuralNet) TotalWeights() (total int) {
-	for i := 0; i < nn.NumHiddenLayers; i++ {
-		layer := nn.Layers[i]
-		for j := 0; j < layer.NumNeurons; j++ {
-			neuron := layer.Neurons[j]
-			for k := 0; k < neuron.NumInputs; k++ {
-				total++
-			}
+	// Start at 1 because input layer has no weights
+	for _, layer := range nn.Layers[1:] {
+		for _, neuron := range layer.Neurons {
+			total += len(neuron.Weights) - 1
 		}
 	}
 	return
 }
 
-func (nn *NeuralNet) Update(inputs []float64) (outputs []float64) {
-	cWeight := 0
+func Sigmoid(sum, response float64) float64 {
+	return (1 / (1 + math.Exp(-sum/response)))
+}
+
+func (n *Neuron) CalcOutput() {
+	sum := 0.0
+	for i, input := range n.Inputs {
+		sum += input * n.Weights[i]
+	}
+
+	// Add bias
+	sum += n.Weights[n.TotalInputs] * Bias
+	n.Output = Sigmoid(sum, ActivationResponse)
+}
+
+func (nl *NeuronLayer) Outputs() (outputs []float64) {
+	for _, neuron := range nl.Neurons {
+		outputs = append(outputs, neuron.Output)
+	}
+	return
+}
+
+func (nn *NeuralNet) Predict(inputs []float64) {
 	if len(inputs) != nn.NumInputs {
 		return
 	}
 
-	for i := 0; i < len(nn.Layers); i++ {
-		if i > 0 {
-			inputs = outputs
+	// Set inputs/outputs of input layer
+	inputLayer := nn.Layers[0]
+	for i, neuron := range inputLayer.Neurons {
+		neuron.Output = inputs[i]
+	}
+
+	for i, layer := range nn.Layers[1:] {
+		prevLyr := nn.Layers[i]
+		for _, neuron := range layer.Neurons {
+			neuron.Inputs = prevLyr.Outputs()
+			neuron.CalcOutput()
 		}
-		outputs = make([]float64, 0)
-		cWeight = 0
-		layer := nn.Layers[i]
-		for j := 0; j < layer.NumNeurons; j++ {
-			var netinput float64 = 0.0
-			neuron := layer.Neurons[j]
-			numInputs := neuron.NumInputs
+	}
+}
 
-			for k := 0; k < numInputs; k++ {
-				w := 0.0
-				if cWeight < len(inputs) {
-					w = inputs[cWeight]
-				}
-				netinput += neuron.Weights[k] * w
-				cWeight++
-			}
-
-			// Add Bias
-			netinput += neuron.Weights[numInputs-1] * Bias
-
-			outputs = append([]float64{Sigmoid(netinput, ActivationResponse)}, outputs...)
-			cWeight = 0
-		}
+func (nn *NeuralNet) Outputs() (outputs []float64) {
+	outputLyr := nn.Layers[len(nn.Layers)-1]
+	for _, neuron := range outputLyr.Neurons {
+		outputs = append(outputs, neuron.Output)
 	}
 	return
 }
 
-func Sigmoid(netinput, response float64) float64 {
-	return (1 / (1 + math.Exp(-netinput/response)))
-}
-
 func (nn *NeuralNet) Train() {
-	for {
-		for _, ex := range TrainingSet {
-			input := make([]float64, 0)
-			for _, val := range ex[:len(ex)-1] {
-				input = append(input, Lookup[val])
-			}
-			predicted := nn.Update(input)[0] > 0.5
-			expected := ex[len(ex)-1]
-			log.Println("INPUT: ", input)
-			log.Println("Predicted: ", predicted)
-			log.Println("Expected: ", expected)
-			// compute_error := 1
-			// if predicted && expected {
-			// 	compute_error = 0
-			// }
-
+	for _, ex := range TrainingSet {
+		input := make([]float64, 0)
+		for _, val := range ex[:len(ex)-1] {
+			input = append(input, Lookup[val])
 		}
-		break
+		nn.Predict(input)
+		sum := 0.0
+		for _, num := range nn.Outputs() {
+			sum += num * num
+		}
+		out := Sigmoid(sum, ActivationResponse)
+
+		expected := ex[len(ex)-1]
+		log.Println("INPUT: ", input)
+		log.Println("Predicted: ", out > 0.5)
+		log.Println("Expected: ", expected)
+		// compute_error := 1
+		// if predicted && expected {
+		// 	compute_error = 0
+		// }
+
 	}
 }
 
@@ -212,15 +234,25 @@ func init() {
 func main() {
 	nn := &NeuralNet{TotalInputs, TotalOutputs, TotalHiddenLayers, TotalNeuronsPerHiddenLayer, make([]*NeuronLayer, 0)}
 	nn.SetupNeuralNet()
-	// log.Printf("Neural Net Layers = ", len(nn.Layers))
+	log.Printf("Neural Net Layers: %d\n", len(nn.Layers))
 	// log.Printf("Neural Net:\n\n%+v", nn)
 
 	log.Printf("Neural Net Total Weights: %+v\n", nn.TotalWeights())
 	// log.Printf("Neural Net Weights: \n\n%+v", nn.GetWeights())
 
-	// inputs := []float64{0.0, 0.0, 0.0, 1.0}
-	// log.Println("Updating with ", inputs)
-	// log.Printf("%+v\n", nn.Update(inputs))
+	log.Printf("Initial Outputs: %+v\n", nn.Outputs())
+	inputs := []float64{0.0, -1.0, 0.0, 1.0}
+	log.Println("Updating with ", inputs)
+	nn.Predict(inputs)
+	log.Printf("New Outputs: %+v\n", nn.Outputs())
+	sum := 0.0
+	for _, num := range nn.Outputs() {
+		sum += num * num
+	}
+	sum += Bias
+	out := Sigmoid(sum, ActivationResponse)
+	log.Println("Output through Sigmoid: ", out)
 
+	log.Println("Train")
 	nn.Train()
 }
