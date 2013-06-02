@@ -15,7 +15,6 @@ type Neuron struct {
 
 func (n *Neuron) SetupNeuron(inputs int) {
 	n.TotalInputs = inputs
-	// Add 1 weight to carry bias
 	for i := 0; i < inputs; i++ {
 		n.Weights = append(n.Weights, rand.Float64())
 	}
@@ -26,9 +25,6 @@ func (n *Neuron) CalcOutput() {
 	for i, input := range n.Inputs {
 		sum += input * n.Weights[i]
 	}
-
-	// Add bias
-	// sum += n.Weights[n.TotalInputs] * Bias
 	n.Output = Sigmoid(sum)
 }
 
