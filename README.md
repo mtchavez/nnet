@@ -94,6 +94,7 @@ You can run the tests using ```go test```
 * Allow multiple hidden layers
 * Write function to export weights of neural net
 * Write function to import previously known weights
+* Allow Activation functions to be set to anything
 
 ## License
 Written by Chavez
