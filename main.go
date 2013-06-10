@@ -12,28 +12,14 @@ func init() {
 }
 
 func main() {
-	nn := nnet.NewNeuralNetWithDefaults()
-	nn.SetupNeuralNet()
-	log.Printf("Neural Net Layers: %d\n", len(nn.Layers))
-	// log.Printf("Neural Net:\n\n%+v", nn)
+	nn := &nnet.NeuralNet{}
+	nn.SetupNeuralNet(4, 5, 1)
+	nn.Train(nnet.TrainingSet)
 
-	log.Printf("Neural Net Total Weights: %+v\n", nn.TotalWeights())
-	// log.Printf("Neural Net Weights: \n\n%+v", nn.GetWeights())
-
-	log.Printf("Initial Outputs: %+v\n", nn.Outputs())
-	inputs := []float64{0.0, -0.32456}
-	log.Println("Predicting with ", inputs)
-	nn.Predict(inputs)
-	log.Printf("New Outputs: %+v\n", nn.Outputs())
-
-	log.Println("Weights Before Train")
-	log.Println(nn.GetWeights())
-	log.Println("Train")
-	nn.Train()
-	log.Println("Finished Training")
-	log.Println("Weights After Train")
-	log.Println(nn.GetWeights())
-	log.Println("Predicting again with ", inputs)
-	nn.Predict(inputs)
-	log.Printf("New Outputs: %+v\n", nn.Outputs())
+	for _, ex := range nnet.TrainingSet {
+		input := ex[:4]
+		expected := ex[4:]
+		output := nn.Predict(input)
+		log.Printf("For %+v neural net predicts %+v and we expect %+v\n", input, output, expected)
+	}
 }

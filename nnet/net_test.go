@@ -1,131 +1,132 @@
 package nnet
 
 import (
+	"fmt"
 	"testing"
 )
 
-func TestNewNeuralNetWithDefaults(t *testing.T) {
-	nn := NewNeuralNetWithDefaults()
-	if nn.NumInputs != TotalInputs {
-		t.Error("Number of inputs should be set correctly for Net")
+func TestSigmoid(t *testing.T) {
+	result := Sigmoid(1.0)
+	expected := 0.7310585786300049
+	if result != expected {
+		t.Errorf("Expected Sigmoid(1.0) to equal %f but got %f", expected, result)
 	}
-	if nn.NumOutputs != TotalOutputs {
-		t.Error("Number of outputs should be set correctly for Net")
+
+	result = Sigmoid(0.0)
+	expected = 0.5
+	if result != expected {
+		t.Errorf("Expected Sigmoid(0.0) to equal %f but got %f", expected, result)
 	}
-	if nn.NumHiddenLayers != TotalHiddenLayers {
-		t.Error("Number of hidden layers should be set correctly for Net")
-	}
-	if nn.NeuronsPerHiddenLayer != TotalNeuronsPerHiddenLayer {
-		t.Error("Number of neurons per hidden layer should be set correctly for Net")
-	}
-	if len(nn.Layers) != 0 {
-		t.Error("Layers should be defaulted to a zero length")
+
+	result = Sigmoid(-1.0)
+	expected = 0.2689414213699951
+	if result != expected {
+		t.Errorf("Expected Sigmoid(-1.0) to equal %f but got %f", expected, result)
 	}
 }
 
-func TestSetupWithNoHiddenLayers(t *testing.T) {
-	nn := NewNeuralNetWithDefaults()
-	nn.NumHiddenLayers = 0
-	nn.SetupNeuralNet()
-	if len(nn.Layers) != 2 {
-		t.Error("Net should only have an input and output layer if no hidden layers")
+func TestDSigmoid(t *testing.T) {
+	result := DSigmoid(1.0)
+	expected := 0.0
+	if result != expected {
+		t.Errorf("Expected DSigmoid(1.0) to equal %f but got %f", expected, result)
+	}
+
+	result = DSigmoid(0.0)
+	expected = 0.0
+	if result != expected {
+		t.Errorf("Expected DSigmoid(0.0) to equal %f but got %f", expected, result)
+	}
+
+	result = DSigmoid(-1.0)
+	expected = -2.0
+	if result != expected {
+		t.Errorf("Expected DSigmoid(-1.0) to equal %f but got %f", expected, result)
 	}
 }
 
-func TestSetupWithHiddenLayers(t *testing.T) {
-	nn := NewNeuralNetWithDefaults()
-	nn.SetupNeuralNet()
-	if len(nn.Layers) != 2+nn.NumHiddenLayers {
-		t.Errorf("Net should have %d hidden layers\n", nn.NumHiddenLayers)
+func TestSetupNeuralNetTotals(t *testing.T) {
+	nn := &NeuralNet{}
+	totalInputs := 4
+	totalHidden := 3
+	totalOutputs := 2
+	nn.SetupNeuralNet(totalInputs, totalHidden, totalOutputs)
+
+	if nn.totalInputs != totalInputs+1 {
+		t.Error("Total inputs not set correctly")
+	}
+
+	if nn.totalHidden != totalHidden {
+		t.Error("Total hidden nodes not set correctly")
+	}
+
+	if nn.totalOutputs != totalOutputs {
+		t.Error("Total outputs not set correctly")
 	}
 }
 
-func TestGettingWeights(t *testing.T) {
-	nn := NewNeuralNetWithDefaults()
-	nn.SetupNeuralNet()
-	weights := nn.GetWeights()
-	expectedTotal := (nn.NumInputs * nn.NeuronsPerHiddenLayer * nn.NumHiddenLayers) + (nn.NeuronsPerHiddenLayer * nn.NumOutputs)
-	if len(weights) != expectedTotal {
-		t.Errorf("Total weights should be %d but got %d\n", len(weights), expectedTotal)
+func TestSetupNeuralNetActivations(t *testing.T) {
+	nn := &NeuralNet{}
+	totalInputs := 4
+	totalHidden := 3
+	totalOutputs := 2
+	nn.SetupNeuralNet(totalInputs, totalHidden, totalOutputs)
+
+	if len(nn.inputActivations) != nn.totalInputs {
+		t.Error("Input activations don't match total inputs")
+	}
+
+	if len(nn.hiddenActivations) != nn.totalHidden {
+		t.Error("Hidden activations don't match total hidden nodes")
+	}
+
+	if len(nn.outputActivations) != nn.totalOutputs {
+		t.Error("Output activations don't match total outputs")
 	}
 }
 
-func TestTotalWeights(t *testing.T) {
-	nn := NewNeuralNetWithDefaults()
-	nn.SetupNeuralNet()
-	total := nn.TotalWeights()
-	expectedTotal := (nn.NumInputs * nn.NeuronsPerHiddenLayer * nn.NumHiddenLayers) + (nn.NeuronsPerHiddenLayer * nn.NumOutputs)
-	if total != expectedTotal {
-		t.Errorf("Total weights should be %d but got %d\n", total, expectedTotal)
-	}
-}
+func TestSetupNeuralNetWeights(t *testing.T) {
+	nn := &NeuralNet{}
+	totalInputs := 4
+	totalHidden := 3
+	totalOutputs := 2
+	nn.SetupNeuralNet(totalInputs, totalHidden, totalOutputs)
 
-func TestSettingNewWeights(t *testing.T) {
-	nn := NewNeuralNetWithDefaults()
-	nn.SetupNeuralNet()
-	newWeights := make([]float64, 0)
-	for _, _ = range nn.GetWeights() {
-		newWeights = append(newWeights, 0.0)
+	if len(nn.inputWeights) != nn.totalInputs {
+		t.Error("Input weights don't match total inputs")
 	}
-	nn.setWeights(newWeights)
-	for _, weight := range nn.GetWeights() {
-		if weight != 0.0 {
-			t.Error("New weight was unable to be set")
+
+	for i, _ := range nn.inputWeights {
+		if len(nn.inputWeights[i]) != nn.totalHidden {
+			t.Error("Hidden weights don't match total inputs")
+		}
+	}
+
+	if len(nn.outputWeights) != nn.totalHidden {
+		t.Error("Output weights don't match total hidden")
+	}
+
+	for i, _ := range nn.outputWeights {
+		if len(nn.outputWeights[i]) != nn.totalOutputs {
+			t.Error("Output weights don't match total outputs")
 		}
 	}
 }
 
-func TestNetOutputs(t *testing.T) {
-	nn := NewNeuralNetWithDefaults()
-	nn.SetupNeuralNet()
-	newWeights := make([]float64, 0)
-	for _, _ = range nn.GetWeights() {
-		newWeights = append(newWeights, 0.0)
-	}
-	nn.setWeights(newWeights)
-	outputs := nn.Outputs()
-	if len(outputs) != nn.NeuronsPerHiddenLayer {
-		t.Error("Total outputs should equal the neurons per hidden layer")
-	}
-	nn.Predict([]float64{0.0, 0.0})
-	outputs = nn.Outputs()
-	for _, out := range outputs {
-		if out != 0.5 {
-			t.Error("Incorrect output based on weights of net")
-		}
-	}
-}
+func ExampleTrain() {
+	nn := &NeuralNet{}
+	nn.SetupNeuralNet(3, 5, 1)
+	nn.Train(TrainingSet2)
 
-func TestClearingDeltas(t *testing.T) {
-	nn := NewNeuralNetWithDefaults()
-	nn.SetupNeuralNet()
-	for _, layer := range nn.Layers {
-		for _, neuron := range layer.Neurons {
-			neuron.delta = 100.00
-		}
+	for _, ex := range TrainingSet2 {
+		input := ex[:3]
+		expected := ex[3:]
+		output := nn.Predict(input)
+		fmt.Printf("For %+v neural net predicts %+v and we expect %+v\n", input, output, expected)
 	}
-	nn.ClearDeltas()
-	for _, layer := range nn.Layers {
-		for _, neuron := range layer.Neurons {
-			if neuron.delta != 0.0 {
-				t.Error("Failed to clear neuron delta")
-			}
-		}
-	}
-}
-
-func TestPredictZeroWeights(t *testing.T) {
-	nn := NewNeuralNetWithDefaults()
-	nn.SetupNeuralNet()
-	newWeights := make([]float64, 0)
-	for _, _ = range nn.GetWeights() {
-		newWeights = append(newWeights, 0.0)
-	}
-	nn.setWeights(newWeights)
-	nn.Predict([]float64{0.0, 0.0})
-	for _, out := range nn.Outputs() {
-		if out != 0.5 {
-			t.Error("Incorrect predict output based on weights of net")
-		}
-	}
+	// Output:
+	// For [1 0 0] neural net predicts [0.9999971598586201] and we expect [1]
+	// For [1 0 1] neural net predicts [0.9993285002784352] and we expect [1]
+	// For [1 1 0] neural net predicts [0.9992881939774748] and we expect [1]
+	// For [1 1 1] neural net predicts [0.0010209810300121532] and we expect [0]
 }
