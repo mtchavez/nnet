@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func ExampleTrain_TrainingSet2() {
+func ExampleNeuralNet_Train() {
 	nn := &NeuralNet{}
 	nn.SetupNeuralNet(3, 5, 1)
 	nn.Train(TrainingSet2)
