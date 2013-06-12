@@ -1,4 +1,4 @@
-nnet
+nnet [![Build Status](https://travis-ci.org/mtchavez/nnet.png)](https://travis-ci.org/mtchavez/nnet)
 ====
 
 Neural Net in Go
